@@ -8,13 +8,14 @@ Options:
     -h, --help          print this text
 '''
 from docopt import docopt
-
+from sys import exit
 from functools import total_ordering
 from pprint import pformat
 from distutils.version import LooseVersion as Version
 import logging
 log = logging.getLogger()
 logging.basicConfig(level=logging.DEBUG)
+from ruamel.yaml.constructor import DuplicateKeyError
 from ruamel.yaml import YAML
 yaml = YAML()
 
@@ -67,14 +68,27 @@ class Package:
         return self._variant
 
     def __eq__(self, other):
-        return (self._package == other._package and self._version == other._version and self._variant == other.variant)
+        v = self._version
+        if self._version is None:
+            v = other._version
+        return (self._package == other._package and v == other._version and self._variant == other.variant)
 
     def __lt__(self, other):
         '''
         returns true if package has a lower version than other
         always returns true if self._version is None.
+
+        >>> A = Package("foo")
+        >>> B = Package("foo/1.2.3")
+        >>> C = Package("bar")
+        >>> A < C or C < A
+        False
+        >>> A < B
+        False
+        >>> B < A
+        False
         '''
-        if other._version is None:
+        if other._version is None or self._version is None:
             return False
         return self._version is None or self._version < other._version
 
@@ -119,14 +133,26 @@ class Build:
         >>> B = Build("bar", ["foo"])
         >>> A == B
         False
+        >>> B == A
+        False
         >>> C = Build("baz")
         >>> A == C
         True
+        >>> C == A
+        True
+
+        Also having less specific dependencies causes non-parallel builds
+        #>>> A = Build("foo/1.2.3")
+        #>>> B = Build("bar", ["foo"])
+        #>>> A == B
+        #False
+        #>>> B == A
+        #False
         '''
         return (self._package == other._package
-                or
-                ( self._package not in other._dependencies
-                  and other._package not in self._dependencies))
+               or
+               ( self._package not in other._dependencies
+                 and other._package not in self._dependencies))
 
     def __repr__(self):
         return f'{self._package}()'
@@ -148,21 +174,67 @@ class Build:
         return self._package in other._dependencies or any([self._package < dep for dep in other._dependencies])
 
 
+def red(x):
+    return f"\033[31m{x}\033[m"
+
+def green(x):
+    return f"\033[32m{x}\033[m"
+
+def blue(x):
+    return f"\033[34m{x}\033[m"
+
+def orange(x):
+    return f"\033[00;39m{x}\033[m"
+
+def yellow(x):
+    return f"\033[00;33m{x}\033[m"
+
+def gray(x):
+    return f"\033[00;90m{x}\033[m"
+
+def bold(x):
+    return f"\033[01m{x}\033[m"
+
 def CommandsView(deployment):
     output = list()
     done = []
     for build in deployment:
         done_already = []
-        output.append(f"\033[01;33m# Building {build.package}\033[m")
-        output.append("module purge")
+        output.append(blue(f"\n# Building {build.package}"))
+        output.append(gray("module purge"))
         for dep in build.dependencies:
-            info = build in deployment
-            output.append(f"module load {dep:30s}{info}")
-        output.append(f"build {build.package.build_command}")
+            comment = blue("# ")
+            info = gray("system provided")
+            if dep in deployment:
+                info = green("rebuilt")
+            output.append(f"module load {dep:30s}{comment}{info}")
+        output.append(bold(f"{build.package.build_command}"))
     return "\n".join(output) + "\n"
 
 
 class Deployment:
+    '''
+    Ordered set of Builds
+
+    >>> d = Deployment([
+    ...        Build("A", ["B"]),
+    ...        Build("B", ["C"]),
+    ...        Build("C", ["D"])
+    ...     ])
+    >>> list(d)
+    [C/*/default(), B/*/default(), A/*/default()]
+
+    circular dependencies will raise an error
+    >>> d = Deployment([
+    ...        Build("A", ["B"]),
+    ...        Build("B", ["C"]),
+    ...        Build("C", ["A"])
+    ...     ])
+    >>> list(d)
+    Traceback (most recent call last):
+       ...
+    ValueError: package A/*/default seems to have a cyclic dependency!
+    '''
     def __init__(self, builds=[]):
         self._builds = builds
 
@@ -174,31 +246,44 @@ class Deployment:
         self._builds.append(build)
 
     def __iter__(self):
-        yield from sorted(self._builds)
+        '''
+        odered iterator
+        raises ValueError if packages are not oderable
 
-    def __contains__(self, build):
+
+        '''
+        done = []
+        for build in sorted(self._builds):
+            if any([build.package in donepkg.dependencies for donepkg in done]):
+                raise ValueError("package %s seems to have a cyclic dependency!" % build.package)
+            yield build
+            done.append(build)
+
+    def __contains__(self, package):
         '''
         >>> A = Build("foo")
         >>> B = Build("bar", ["foo", "baz"])
         >>> D = Deployment([A,B])
-        >>> A in D
+        >>> A.package in D
         True
-        >>> B in D
+        >>> B.package in D
         True
         >>> print(D._builds)
-        >>> Build("buz") in D
+        [foo/*/default(), bar/*/default()]
+        >>> Package("baz") in D
         False
         '''
-        for b in self._builds:
-            cmp_is = build is b
-            cmp_eq = build == b
-            print(f"{build} is {b}? {cmp_is} {cmp_eq}")
-        return build in self._builds
+        return package in [depl.package for depl in self._builds]
 
 
 def read_config(filename):
-    with open(filename, 'rb') as infile:
-        return yaml.load(infile)
+    yaml.allow_duplicate_keys = False
+    try:
+        with open(filename, 'rb') as infile:
+            return yaml.load(infile)
+    except DuplicateKeyError as e:
+        log.error("%s", e)
+        exit(2)
 
 
 def main():
@@ -210,6 +295,7 @@ def main():
     log.info("Hello World")
 
     config = read_config(args['<config>'])
+
     plan = Deployment()
     for package, dependencies in config.items():
         plan.append(Build(package, dependencies))
