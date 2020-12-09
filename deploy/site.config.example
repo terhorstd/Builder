@@ -1,0 +1,28 @@
+boost:
+- gcc/10.2.0
+
+cmake: []
+
+nest-simulator/2.18.0:
+- gsl/2.6
+- boost/1.74.0
+- cmake
+- mpi
+
+nest-simulator/2.20.0/default:
+- gsl
+- boost/1.74.0
+- cmake
+- mpi
+
+gsl/2.6/default:
+- gcc/10.2.0/default
+
+gmp: []
+mpfr:
+- gmp
+mpc:
+- mpfr
+gcc:
+- mpc
+
