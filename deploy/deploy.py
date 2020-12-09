@@ -284,15 +284,18 @@ class DotView:
         name = "g"
         if "name" in graph:
             name = graph['name']
-        output = ["digraph %s {" % name]
 
+        # graph level
+        output = ["digraph %s {" % name]
         output.append("    " + self.attr(graph.graph, asep="\n    "))
+
+        # nodes
+        for node, data in graph.nodes(data=True):       # debug only
+            log.debug("node: %d %s (%s)", networkx.classes.function.degree(graph, node), node, data)
         output.append("\n    node [%s];" % self.attr(self._default_node_attributes))
-        for node, data in graph.nodes(data=True):
-            log.debug("node: %s (%s)", node, data)
         output.extend(['    {} [{}];'.format(n, self.attr(nattr)) for n, nattr in graph.nodes(data=True)])
 
-
+        # edges
         output.append("\n    edges [%s];" % self.attr(self._default_edge_attributes))
         for root in [node for node, degree in graph.in_degree() if degree == 0]:
             output.append("    // from %s" % graph.nodes[root]["label"])
