@@ -61,10 +61,21 @@ environment requires
 - pytest-pylint
 - pytest-mypy
 - pytest-pycodestyle
+- pytest-cov
 - pytest-pydocstyle.
 
 The configuration entry point is `tox.ini` which is recognized as config file
 by various tools. PyLint branches out to `.pylintrc` as defined in `tox.ini`.
+
+For the configuration options of each tool and the inline code configs see the
+package specific documentation pages: [PyLint][pylint-doc], [MyPy][mypy-doc],
+[PyCodeStyle][pycodestyle-doc], [PyDocStyle][pydocstyle-doc].
+
+[pylint-doc]: http://pylint.pycqa.org/en/latest/faq.html?highlight=pylintrc#how-do-i-find-the-option-name-for-pylintrc-corresponding-to-a-specific-command-line-option PyLint Documentation
+[mypy-doc]: https://mypy.readthedocs.io/en/latest/inline_config.html MyPy Documentation
+[pycodestyle-doc]: https://pycodestyle.pycqa.org PyCodeStyle Documentation
+[pydocstyle-doc]: http://www.pydocstyle.org/en/stable/usage.html?highlight=configuration#available-options PyDocStyle Documentation
+[pytest-cov-doc]: https://pytest-cov.readthedocs.io PyTest-cov Documentation
 
 
 License
