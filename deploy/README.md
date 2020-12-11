@@ -54,7 +54,17 @@ See documentation of Builder for details.
 Testing
 -------
 
-   Run `pytest` to check package works as expected.
+Run `pytest` to check package works as expected. For full testing, the test
+environment requires
+
+- pytest
+- pytest-pylint
+- pytest-mypy
+- pytest-pycodestyle
+- pytest-pydocstyle.
+
+The configuration entry point is `tox.ini` which is recognized as config file
+by various tools. PyLint branches out to `.pylintrc` as defined in `tox.ini`.
 
 
 License
