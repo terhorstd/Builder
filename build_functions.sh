@@ -150,7 +150,7 @@ source_prepare() {
 	mkdir -pv "$(dirname "${PACKAGE_FILE}")"
 	if [ ! -r "${PACKAGE_FILE}" ]; then
 		log_status ">>> downloading $(basename "${PACKAGE_FILE}") from ${URL}"
-		wget "${URL}" -O "${PACKAGE_FILE}"
+		wget --progress=dot:mega "${URL}" -O "${PACKAGE_FILE}"
 	fi
 	check_package_file
 	if [ ! -d "${SOURCE}" ]; then
