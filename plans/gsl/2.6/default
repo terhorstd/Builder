@@ -15,9 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Builder.  If not, see <https://www.gnu.org/licenses/>.
 #
-PACKAGE=gsl
-VERSION=${1:-2.6}
-SUFFIX=${2:-}
 URL=ftp://ftp.gnu.org/gnu/${PACKAGE}/${PACKAGE}-${VERSION}.tar.gz
 GPG_VERIFY_KEY=../gsl_key.txt
 
