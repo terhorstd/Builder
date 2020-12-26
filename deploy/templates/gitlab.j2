@@ -1,0 +1,19 @@
+{% for build in deployment %}
+
+{{ build.name }}:
+  stage: build{{ build.depth }}
+  {% block script %}
+  {% if build.script %}
+    script: {% for dep in build.script %}
+    - {{ dep }}
+    {% endfor %}
+  {% endif %}
+  {% endblock %}
+  needs: {% if build.dependencies %}
+
+    {% for dep in build.dependencies %}
+    - {{ dep }}
+    {% endfor %}
+  {% else %}[]{% endif %}
+
+{% endfor %}

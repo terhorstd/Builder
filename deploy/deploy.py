@@ -20,8 +20,10 @@
 '''
 Organize a set of builds.
 
-Usage: deploy [options] show <config>
+Usage: deploy [options] shell <config>
+       deploy [options] gitlab <config>
        deploy [options] graph <config>
+       deploy [options] deps <config>
 
   Deploy handles the organization of many build commands for a specific site
   when using the Builder tool.  As usually the Builds require prior loading of
@@ -31,8 +33,15 @@ Usage: deploy [options] show <config>
 
 Subcommands are
 
-  show
-     print the commands of all builds ordered by their dependencies.
+  shell
+    print the commands of all builds ordered by their dependencies for
+    execution in a shell environment. Typical usage could be `deploy shell
+    site.config > buildall.sh && ./buildall.sh`.
+
+  gitlab
+    print the build pipeline of all tools in a `.gitlab-ci.yml` includable
+    format. The exact necessary syntax depends on the GitLab version, so tuning
+    the template may be necessary.
 
   graph
     Print a DOT graph of the package dependencies to stdout. The resulting
@@ -47,13 +56,17 @@ import sys
 from pprint import pformat
 from distutils.version import LooseVersion as Version
 import logging
+from textwrap import indent as text_indent
+
+from docopt import docopt                                   # type: ignore
 import networkx                                             # type: ignore
 from networkx.classes.function import info as nx_info       # type: ignore
 from networkx.algorithms import dfs_tree as nx_dfs_tree     # type: ignore
 from networkx.algorithms.dag import topological_sort as nx_topological_sort     # type: ignore
 from ruamel.yaml.constructor import DuplicateKeyError
 from ruamel.yaml import YAML
-from docopt import docopt                                   # type: ignore
+
+from templview import TemplateView
 
 yaml = YAML()
 log = logging.getLogger()
@@ -327,6 +340,55 @@ class CommandsView:     # pylint: disable=too-few-public-methods
         return "\n".join(output) + "\n"
 
 
+class GitlabView:     # pylint: disable=too-few-public-methods
+    'View the commands required to build a complete package deployment graph.'
+
+    def __call__(self, graph):
+        'Return shell commands view of the given graph.'
+        assert isinstance(graph, networkx.DiGraph)
+        view = TemplateView()
+        return view(graph)
+
+
+class LineGraphView:    # pylint: disable=too-few-public-methods
+    'View graph with indentions and one node per line.'
+
+    def __init__(self, nodeformat="{label}"):
+        self._nodeformat = nodeformat
+        self._lines = {
+            "default": {
+                "branch": (" ├─╴", " │  "),   # branch, forward
+                "last": (" ╰─╴", "    "),
+            },
+            "dashed": {
+                "branch": (" ├┄ ", " │  "),   # branch, forward
+                "last": (" ╰┄ ", "    "),
+            },
+        }
+
+    def __call__(self, graph, roots=None, indent=""):
+        'Return line graph view of the given graph.'
+        assert isinstance(graph, networkx.DiGraph)
+        return "\n".join(self._subtree(graph, roots))
+
+    def _subtree(self, graph, root=None, indent=""):
+        'Generate lines for each subtree.'
+        if root is None:
+            roots = [node for node, degree in graph.in_degree() if degree == 0]
+        elif isinstance(root, list):
+            roots = root
+        else:
+            roots = [root]
+        for node in roots:
+            lines = self._lines["default"]
+            branch, forward = lines["branch"]
+            if node == roots[-1]:    # last
+                branch, forward = lines["last"]
+            data = graph.nodes[node]
+            yield indent + branch + self._nodeformat.format(**data)
+            yield from self._subtree(graph, root=[child for _, child in graph.edges(node)], indent=indent + forward)
+
+
 def _template(build, donepkgs=None):
     '''
     Write a commands section for the given build.
@@ -494,7 +556,7 @@ class GraphPresenter:     # pylint: disable=too-few-public-methods
                     continue
                 graph.add_edge(specnode, wildnode, type="induced")
 
-        log.info("Graph info:\n%s", nx_info(graph))
+        log.info("Graph info:\n%s", text_indent(nx_info(graph), "    "))
         return graph.reverse(copy=False)
 
 
@@ -580,12 +642,18 @@ def main():
         plan.append(Build(package, dependencies))
 
     graph = GraphPresenter()
-    if args['show']:
+    if args['shell']:
         commands = CommandsView()
         print(commands(graph(plan)))
+    if args['gitlab']:
+        gitlab = GitlabView()
+        print(gitlab(graph(plan)))
     elif args['graph']:
         dot = DotView()
         print(dot(graph(plan)))
+    elif args['deps']:
+        view = LineGraphView()
+        print(view(graph(plan)))
 
 
 if __name__ == '__main__':

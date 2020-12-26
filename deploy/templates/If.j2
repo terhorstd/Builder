@@ -1,0 +1,6 @@
+if ({{ obj.condition }}); then
+	{{ obj.then_block|render }}
+{% if obj.else_block %}else
+	{{ obj.else_block|render }}
+{% endif %}
+fi
