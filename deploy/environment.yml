@@ -4,7 +4,6 @@ channels:
 dependencies:
 - python>=3.7
 - networkx
-- docopt
 - ruamel.yaml
 - jinja2
 
@@ -15,5 +14,8 @@ dependencies:
 - pytest-cov
 - pip
 - pip:
+  - docopt-ng
+
+# testing dependencies
   - pytest-pycodestyle
   - pytest-pydocstyle

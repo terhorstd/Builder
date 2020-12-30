@@ -57,6 +57,7 @@ from pprint import pformat
 from distutils.version import LooseVersion as Version
 import logging
 from textwrap import indent as text_indent
+from typing import Optional, Tuple, Sequence
 
 from docopt import docopt                                   # type: ignore
 import networkx                                             # type: ignore
@@ -353,7 +354,7 @@ class GitlabView:     # pylint: disable=too-few-public-methods
 class LineGraphView:    # pylint: disable=too-few-public-methods
     'View graph with indentions and one node per line.'
 
-    def __init__(self, nodeformat="{label}"):
+    def __init__(self, nodeformat='{node[label]}'):
         self._nodeformat = nodeformat
         self._lines = {
             "default": {
@@ -361,32 +362,51 @@ class LineGraphView:    # pylint: disable=too-few-public-methods
                 "last": (" ╰─╴", "    "),
             },
             "dashed": {
-                "branch": (" ├┄ ", " │  "),   # branch, forward
-                "last": (" ╰┄ ", "    "),
+                "branch": ("▶├┄ ", " │  "),   # branch, forward
+                "last": ("▶╰┄ ", "    "),
             },
         }
 
-    def __call__(self, graph, roots=None, indent=""):
+    def __call__(self, graph, root: Optional[str] = None, indent: str = "") -> str:
         'Return line graph view of the given graph.'
         assert isinstance(graph, networkx.DiGraph)
+        if root is None:
+            roots = [(node, None) for node, degree in graph.in_degree() if degree == 0]
+        else:
+            roots = [(root, None)]
         return "\n".join(self._subtree(graph, roots))
 
-    def _subtree(self, graph, root=None, indent=""):
-        'Generate lines for each subtree.'
-        if root is None:
-            roots = [node for node, degree in graph.in_degree() if degree == 0]
-        elif isinstance(root, list):
-            roots = root
-        else:
-            roots = [root]
-        for node in roots:
+    def _subtree(self, graph, roots: Sequence[Tuple[str, Optional[str]]], indent=""):
+        '''
+        Generate lines for each subtree.
+
+        Parameters
+        ----------
+        graph : networkx.DiGraph
+        roots : list (optional)
+            optional list of tuples with root nodes to draw. List items must be
+            pairs of node and praent edge pointing to each node. It is assumed
+            that there is exactly one parent edge per node.
+        indent : string (optional)
+            prefix of each line
+        '''
+        for node, edge in roots:
             lines = self._lines["default"]
+            nodedata = graph.nodes[node]
+            edgedata = None
+            if edge is not None:
+                edgedata = graph.edges[edge, node]
+                if edgedata.get("type", 'unknown') == 'induced':
+                    lines = self._lines["dashed"]
+
             branch, forward = lines["branch"]
-            if node == roots[-1]:    # last
+            if node == roots[-1][0]:    # last
                 branch, forward = lines["last"]
-            data = graph.nodes[node]
-            yield indent + branch + self._nodeformat.format(**data)
-            yield from self._subtree(graph, root=[child for _, child in graph.edges(node)], indent=indent + forward)
+            yield indent + branch + self._nodeformat.format(node=nodedata, edge=edgedata)
+            yield from self._subtree(
+                graph,
+                roots=[(child, edge) for edge, child in graph.edges(node)],
+                indent=indent + forward)
 
 
 def _template(build, donepkgs=None):
