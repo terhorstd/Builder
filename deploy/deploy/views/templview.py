@@ -25,7 +25,7 @@ class TemplateView:     # pylint: disable=too-few-public-methods
 
     def __init__(self, templatedir="templates"):
         'Initialize template loader with given path.'
-        self._templatedir = Path(templatedir)
+        self._templatedir = Path(__file__).parents[0] / Path(templatedir)
 
         log.debug("template directory '%s'", self._templatedir)
         self._env = Environment(
@@ -38,6 +38,9 @@ class TemplateView:     # pylint: disable=too-few-public-methods
             ],
         )
 
+        if not self._env.list_templates():
+            log.error("NO TEMPLATES FOUND in %s/!", self._templatedir)
+            raise RuntimeError("No templates found in %s/" % self._templatedir)
         log.debug("available templates: %s", self._env.list_templates())
         # add custom filters
         # newfilters = loadfilters(args['--filter'])
