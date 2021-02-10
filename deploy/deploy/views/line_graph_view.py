@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 class LineGraphView:    # pylint: disable=too-few-public-methods
     'View graph with indentions and one node per line.'
 
-    def __init__(self, nodeformat='{node[label]}'):
+    def __init__(self, nodeformat='{node[label]} {node[stage]}'):
         self._nodeformat = nodeformat
         self._lines = {
             "default": {

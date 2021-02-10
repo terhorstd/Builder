@@ -54,15 +54,26 @@ Options:
 '''
 from pprint import pformat
 import logging
+from functools import wraps
 
 from docopt import docopt                                   # type: ignore
 
 from deploy import read_config, Deployment, Build
 from deploy.presenters import GraphPresenter
 from deploy.views import CommandsView, GitlabView, DotView, LineGraphView
+from deploy.transforms.annotations import add_stage
 
 log = logging.getLogger()
 logging.basicConfig(level=logging.DEBUG)
+
+
+def add_transform(transform):
+    def decorated(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return transform(func(*args, **kwargs))
+        return wrapper
+    return decorated
 
 
 def main():
@@ -81,6 +92,7 @@ def main():
         plan.append(Build(package, dependencies))
 
     graph = GraphPresenter()
+    graph = add_transform(add_stage)(graph)
     if args['shell']:
         commands = CommandsView()
         print(commands(graph(plan)))
