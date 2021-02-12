@@ -13,7 +13,7 @@ from typing import Optional
 # from docopt import docopt                                   # type: ignore
 from pathlib import Path
 # from ruamel.yaml import YAML
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, PackageLoader
 # from jinja2 import select_autoescape
 
 log = logging.getLogger()
@@ -25,11 +25,19 @@ class TemplateView:     # pylint: disable=too-few-public-methods
 
     def __init__(self, templatedir="templates"):
         'Initialize template loader with given path.'
-        self._templatedir = Path(__file__).parents[0] / Path(templatedir)
 
-        log.debug("template directory '%s'", self._templatedir)
+        load_from = "package"
+        if load_from == "filesystem":
+            self._templatedir = Path(__file__).parents[0] / Path(templatedir)
+            log.debug("template directory '%s'", self._templatedir)
+            template_loader = FileSystemLoader(str(self._templatedir))
+        elif load_from == "package":
+            template_package_name = "templates", ""
+            log.debug("templates from package '%s', '%s'", *template_package_name)
+            template_loader = PackageLoader("views")
+
         self._env = Environment(
-            loader=FileSystemLoader(str(self._templatedir)),
+            loader=template_loader,
             trim_blocks=True,
             lstrip_blocks=True,
             # autoescape=select_autoescape(['html', 'xml'])
@@ -39,8 +47,8 @@ class TemplateView:     # pylint: disable=too-few-public-methods
         )
 
         if not self._env.list_templates():
-            log.error("NO TEMPLATES FOUND in %s/!", self._templatedir)
-            raise RuntimeError("No templates found in %s/" % self._templatedir)
+            log.error("NO TEMPLATES FOUND!")
+            raise RuntimeError("No templates found!")
         log.debug("available templates: %s", self._env.list_templates())
         # add custom filters
         # newfilters = loadfilters(args['--filter'])
