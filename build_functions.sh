@@ -61,6 +61,23 @@ builder_info () {
 	log_info ""
 	log_info "  CONFIGURE_OPTIONS=\"${CONFIGURE_OPTIONS:- <undefined>}\""
 }
+
+
+################################################################################
+# Function tools
+# from https://stackoverflow.com/a/18839557/14085246
+copy_function() {
+  test -n "$(declare -f "$1")" || return
+  eval "${_/$1/$2}"
+}
+
+rename_function() {
+  copy_function "$@" || return
+  unset -f "$1"
+}
+################################################################################
+
+
 ################################################################################
 # Default implementation of steps
 
@@ -203,7 +220,9 @@ build_package () {
 	set -x
 	"${SOURCE}/configure" --prefix="${TARGET}" --srcdir="${SOURCE}" ${CONFIGURE_OPTIONS:-} 2>&1 | tee "${LOG}/configure.log"
 	make -j ${MAKE_THREADS:-$(nproc)} 2>&1 | tee "${LOG}/make.log"
+	ret=$?
 	set +x
+	return ${ret}
 }
 
 build_test () {

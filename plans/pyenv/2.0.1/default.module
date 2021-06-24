@@ -1,0 +1,27 @@
+#%Module1.0#####################################################################
+#
+# ${PACKAGE}/${VERSION}/${VARIANT}
+# ${AUTOMATIC_BUILD_WARNING}
+#
+set INSTALLDIR "${TARGET}"
+
+proc ModulesHelp { } {
+        global VERSION
+        puts stderr "${PACKAGE} ${VERSION} (${VARIANT})"
+}
+
+module-whatis   "${PACKAGE} ${VERSION} ${VARIANT}"
+
+conflict ${PACKAGE}
+${PREREQ_DEPENDS}
+
+setenv          PYENV_ROOT        "\$INSTALLDIR"
+setenv          PYENV_SHELL       "$(basename $SHELL)"
+prepend-path    PATH              "\$INSTALLDIR/bin"
+prepend-path    PATH              "\$INSTALLDIR/shims"
+#prepend-path    PATH              $(pyenv init --path | sed -e "s/.*=//" -e 's/:.*"/"/')
+prepend-path    MANPATH           "\$INSTALLDIR"
+
+setenv       pyenv      "{ local command; command=\\"\${1:-}\\"; if [ \\"\$#\\" -gt 0 ]; then shift; fi; case \\"\$command\\" in rehash|shell) eval \\"\$(pyenv \\"sh-\$command\\" \\"\$@\\")\\"; ;; *) command pyenv \\"\$command\\" \\"\$@\\";  ;; esac; }"
+
+

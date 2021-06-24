@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# This file is part of Builder.
+#
+# Builder is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Builder is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Builder.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+URL=https://github.com/pyenv/${PACKAGE}/archive/refs/tags/v${VERSION}.tar.gz
+SHA256SUM=b04953dbe571873b83580b4084cbe10921254236d08f3bf8c7bc392f6db236a3
+
+# Pyenv does not actually need to be compiled, but has a compilable sub component in src/
+# Here we do a kind of in-tree build wrapping the usual functions with slightly modified variables.
+rename_function build_package build_package_orig
+build_package() {
+	log_status ">>> build wrapper"
+	BUILD="${SOURCE}"
+	SOURCE_ORIG="${SOURCE}"
+	SOURCE="${SOURCE}/src"
+
+	# required for install_test
+	export PYENV_ROOT="${SOURCE}"
+	export PATH="$PYENV_ROOT/bin:$PATH"
+	#export PYENV_VERSION="${VERSION}"
+	build_package_orig || log_warning "!!! build failed, but install instructions say it's not fatal"
+	SOURCE="${SOURCE_ORIG}"
+}
+
+# Install is just a copy of source to target (see Pyenv install instructions)
+build_install() {
+	log_status ">>> installing... (copy source)"
+	mkdir -pv "$(dirname "${TARGET}")"
+	set -x
+	rsync -aPp "${SOURCE}/" "${TARGET}" 2>&1 | tee "${LOG}/make-install.log"
+	set +x
+}
