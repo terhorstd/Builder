@@ -20,5 +20,5 @@ URL=https://zoom.us/client/latest/${PACKAGE}_amd64.deb
 
 log_info "ZOOM Key fingerprint should be: 3960 60CA DD8A 7522 0BFC B369 B903 BF18 61A7 C71D"
 
-SHA256SUM='aea1d17e237b0e3fb124c246793f1332af79776b2bcaf65440401d17f380dd21'   # zoom_amd64_5.4.6.56259.1207.deb
+SHA256SUM='6e5e53b3f3c6948fe93fa9a95b5a5a02af3537d0edbca823d7587c043cbd0ed1'   # zoom_amd64_5.0.413237.0524.deb
 GPG_VERIFY_KEY=package-signing-key.pub
