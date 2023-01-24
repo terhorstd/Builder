@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# Builder – Compile scripts for local installs of software packages.
+# Copyright (C) 2020 Forschungszentrum Jülich GmbH, INM-6
+#
+# Builder is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Builder is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Builder.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+URL=https://github.com/hedgedoc/cli/archive/refs/tags/v${VERSION}.tar.gz
+
+# this checksum was not officially provided, but taken from downloaded 1.8.0
+# tar-ball
+SHA256SUM=b59b2def15c7af3bc9750274da940c50c7de101fd9e38c1ef3e63b52e7e30526
+
+
+build_package () {
+	log_status ">>> build ${PACKAGE}/${VERSION}/${VARIANT}..."
+	cd "${BUILD}"
+	cp -rv "${SOURCE}"/* .  2>&1 | tee "${LOG}/build.log"
+	log_info ">>> nothing to be build"
+	set +x
+}
+
+build_install() {
+	log_status ">>> installing..."
+	mkdir -pv "${TARGET}" 2>&1 | tee "${LOG}/install.log"
+	cp -rv "${BUILD}"/* "${TARGET}" 2>&1 | tee -a "${LOG}/install.log"
+	test -x "${TARGET}"/bin/hedgedoc-cli || \
+		cp -lv "${TARGET}"/bin/codimd "${TARGET}"/bin/hedgedoc-cli
+}

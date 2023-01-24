@@ -1,0 +1,24 @@
+#%Module1.0#####################################################################
+#
+# ${PACKAGE}/${VERSION}/${VARIANT}
+# ${AUTOMATIC_BUILD_WARNING}
+#
+set     INSTALLDIR      "${TARGET}"
+
+proc ModulesHelp { } {
+        puts stderr "
+   A tiny CLI to perform common operations on HedgeDoc (the largest open-source
+   fork of HackMD).
+
+   To make use of this, you need to define an environment variable with the
+   targeted server URL
+	export HEDGEDOC_SERVER='https://iffmd.fz-juelich.de'
+"
+}
+
+module-whatis   "access HedgeDoc servers on the command line (${VERSION})"
+
+conflict ${PACKAGE}
+${PREREQ_DEPENDS}
+
+prepend-path    PATH    \$INSTALLDIR/bin
