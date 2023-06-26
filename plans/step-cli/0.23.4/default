@@ -1,0 +1,28 @@
+#!/bin/bash
+#
+# Builder – Compile scripts for local installs of software packages.
+# Copyright (C) 2020 Forschungszentrum Jülich GmbH, INM-6
+#
+# Builder is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Builder is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Builder.  If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+URL=https://dl.smallstep.com/gh-release/cli/docs-cli-install/v${VERSION}/${PACKAGE}_${VERSION}_amd64.deb
+
+# this checksum was not officially provided, but taken from downloaded deb package
+SHA256SUM=d7a4f27ed5500cc1bbd7733f8cddc533af646ccfabc15f83e608d85f121803a3
+
+build_install() {
+	dpkg -i step-cli_0.23.4_amd64.deb
+}

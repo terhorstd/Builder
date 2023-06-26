@@ -36,6 +36,7 @@ split_ext() {
 	*.tar.xz) echo ".tar.xz" ;;
 	*.tgz) echo ".tgz" ;;
 	*.zip) echo ".zip" ;;
+	*.deb) echo ".deb" ;;
 	*) log_error "UNKNOWN EXTENSION OF FILE '$1'"; exit 1;
 	esac
 }
@@ -184,6 +185,9 @@ source_prepare() {
 			unzip "${PACKAGE_FILE}"
 			cd "$SOURCE"
 			rsync -ua --delete-after */ .
+			;;
+		    *.deb)
+			log_status "Nothing to prepare for ${PACKAGE_FILE}"
 			;;
 		    *)
 			log_error "NO RULE HOW TO EXTRACT '${PACKAGE_FILE}'";
